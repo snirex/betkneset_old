@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>התחייבויות - ניהול חשבונות</title>
+
+    <!-- Bootstrap RTL + Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    <!-- jQuery + jQueryUI + DataTables + Buttons -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" />
+
+    <!-- DataTables CSS + Buttons -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css" />
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/autocomplete.js"></script>
+    <style>
+        body {
+            /*display: none;*/
+            background: #f8f9fa;
+            font-family: "Segoe UI",Tahoma,sans-serif;
+        }
+
+        .bg-custom {
+            background: linear-gradient(135deg,#6f86d6 0%,#48c6ef 100%);
+        }
+
+        /* Sidebar style */
+        .sidebar {
+            width: 240px;
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            right: 0;
+            background: linear-gradient(135deg,#6f86d6 0%,#48c6ef 100%);
+            padding-top: 1rem;
+            color: #fff;
+            z-index: 1000;
+        }
+
+            .sidebar .nav-link {
+                color: #fff;
+            }
+
+                .sidebar .nav-link:hover {
+                    background: rgba(255,255,255,0.2);
+                    border-radius: 6px;
+                }
+
+        .submenu {
+            display: none;
+            padding-right: 1rem;
+        }
+
+            .submenu.show {
+                display: block;
+                animation: slideDown 0.3s ease;
+            }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* content area with sidebar */
+        .content {
+            display: none;
+            margin-right: 240px;
+            padding: 1rem;
+        }
+
+        /* Responsive: hide sidebar in small screens */
+        @media (max-width: 992px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                min-height: auto;
+            }
+
+            .content {
+                margin-right: 0;
+            }
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(0,123,255,0.07);
+            cursor: pointer;
+        }
+
+        #firebaseAlert {
+            display: none;
+        }
+
+        tfoot th {
+            background: #f1f1f1;
+        }
+
+        body.theme-blue {
+            background: #e6f0ff;
+            color: #003366;
+        }
+
+        .stat-card {
+            border-radius: 12px;
+            padding: 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        .stat-red {
+            background: #f8d7da !important;
+        }
+
+        .stat-green {
+            background: #d4edda !important;
+        }
+
+        .stat-yellow {
+            background: #fff3cd !important;
+        }
+
+        tfoot tr.balance-row th {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        tfoot tr.balance-row.positive th {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        tfoot tr.balance-row.negative th {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Gmail-style autocomplete enhanced */
+        .ui-autocomplete {
+            max-height: 250px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 0;
+            z-index: 9999;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: opacity 0.2s ease, transform 0.1s ease;
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+
+            .ui-autocomplete.ui-autocomplete-open {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+        .ui-menu-item-wrapper {
+            font-size: 14px;
+            padding: 6px 12px;
+            cursor: pointer;
+        }
+
+        .ui-state-active {
+            background-color: #e8f0fe !important;
+            color: #1967d2 !important;
+            font-weight: 500;
+        }
+
+        #manageSubmenuMobile {
+            display: none;
+        }
+
+            #manageSubmenuMobile.show {
+                display: block;
+            }
+
+        .offcanvas .submenu .nav-link {
+            color: #fff;
+        }
+
+            .offcanvas .submenu .nav-link:hover {
+                background: rgba(255,255,255,0.2);
+                border-radius: 6px;
+            }
+
+        /* כפתור ניהול ראשי בדסקטופ */
+        .sidebar #manageToggle {
+            color: #fff;
+        }
+
+            .sidebar #manageToggle:hover {
+                background: rgba(255,255,255,0.2);
+                border-radius: 6px;
+            }
+
+        /* כפתור ניהול ראשי במובייל */
+        .offcanvas #manageToggleMobile {
+            color: #fff;
+        }
+
+            .offcanvas #manageToggleMobile:hover {
+                background: rgba(255,255,255,0.2);
+                border-radius: 6px;
+            }
+
+        .caret-rotate {
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+
+            .caret-rotate.open {
+                transform: rotate(90deg); /* עכשיו מצביע למעלה */
+            }
+    </style>
+</head>
+<body class="theme-blue">
+
+    <div id="firebaseAlert" class="alert alert-warning alert-dismissible fade show mb-0 text-center" role="alert">
+        ⚠ אין חיבור לבסיס הנתונים כרגע. הנתונים נשמרים מקומית בלבד.
+        <button type="button" class="btn-close"></button>
+    </div>
+
+    <!-- Topbar -->
+    <nav class="navbar navbar-dark bg-custom d-lg-none">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">🏠 ניהול בית הכנסת</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Sidebar for desktop -->
+    <div class="sidebar d-none d-lg-block">
+        <div class="px-3 mb-3">
+            <a class="navbar-brand text-white" href="#">🏠 ניהול בית הכנסת</a>
+        </div>
+        <ul class="nav flex-column px-2">
+            <li class="nav-item"><a class="nav-link active" href="index.html">🏠 דף ראשי</a></li>
+            <li class="nav-item"><a class="nav-link" href="commitments.html">💼 התחייבויות</a></li>
+            <li class="nav-item"><a class="nav-link" href="payments.html">💸 תשלומים</a></li>
+            <li class="nav-item"><a class="nav-link" href="summary.html">📑 סיכום כולל</a></li>
+            <li class="nav-item">
+                <a href="#" class="nav-link d-flex justify-content-between align-items-center" id="manageToggle">
+                    ⚙️ ניהול <i class="bi bi-caret-down"></i>
+                </a>
+                <ul class="submenu list-unstyled" id="manageSubmenu">
+                    <li><a class="nav-link" href="manage.html">⚙️ ניהול סוגי הכנסה</a></li>
+                    <li><a class="nav-link" href="users.html">👥 ניהול משתמשים</a></li>
+                    <li><a class="nav-link" href="permissions.html">🔐 הרשאות</a></li>
+                </ul>
+            </li>
+            <li class="nav-item"><a class="nav-link" href="dashboard.html">📊 דוחות</a></li>
+            <li class="nav-item">
+                <span id="firebaseStatus" class="nav-link text-warning" title="לא מחובר ל-Firebase">
+                    <i class="bi bi-cloud-slash"></i>
+                </span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Offcanvas mobile -->
+    <div class="offcanvas offcanvas-end bg-custom text-white" tabindex="-1" id="mobileSidebar">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title">📂 תפריט</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+            <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link text-white" href="index.html">🏠 דף ראשי</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="commitments.html">💼 התחייבויות</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="payments.html">💸 תשלומים</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="summary.html">📑 סיכום כולל</a></li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link d-flex justify-content-between align-items-center" id="manageToggleMobile">⚙️ ניהול <i class="bi bi-caret-down"></i></a>
+                    <ul class="submenu list-unstyled" id="manageSubmenuMobile">
+                        <li><a class="nav-link" href="manage.html">⚙️ ניהול רשימות</a></li>
+                        <li><a class="nav-link" href="users.html">👥 ניהול משתמשים</a></li>
+                        <li><a class="nav-link" href="permissions.html">🔐 הרשאות</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item"><a class="nav-link text-white" href="dashboard.html">📊 דוחות</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="p-4 rounded bg-white shadow-sm mb-4 text-center">
+            <h1>📝 רישום התחייבויות</h1>
+        </div>
+
+        <div class="container my-4">
+            <div class="row g-3 text-center">
+                <div class="col-md-4"><div class="stat-card stat-red"><h4>סה״כ התחייבויות</h4><div class="sumBalance">0</div></div></div>
+        <!--        <div class="col-md-4"><div class="stat-card stat-green"><h4>סה״כ תשלומים</h4><div id="statActual">0</div></div></div>-->
+            <!--    <div class="col-md-4"><div class="stat-card stat-yellow"><h4>מאזן כללי</h4><div id="statBalance">0</div></div></div>-->
+            </div>
+        </div>
+
+        <div class="container py-4">
+            <div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
+                <button id="openAddModal" class="btn btn-primary"><i class="bi bi-plus-circle"></i> הוסף התחייבות</button>
+                <input type="text" id="globalSearch" class="form-control w-auto" placeholder="🔍 חיפוש חכם...">
+            </div>
+
+            <div class="table-responsive">
+                <table id="transactionsTable" class="display table table-bordered table-hover w-100" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>תאריך</th>
+                            <th>שם</th>
+                            <th>סכום התחייבות</th>
+                            <th>פירוט מצווה</th>
+                            <th>סוג הכנסה</th>
+                            <th>אסמכתא</th>
+                            <th>יתרה</th>
+                            <th>פעולות</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th colspan="2">סה״כ (עמוד זה):</th>
+                            <th id="sumAmount">0</th>
+                            <th colspan="3"></th>
+                            <th class="sumBalance stat-red"">0</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal הוספת/עריכת התחייבות -->
+    <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="addForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title">➕ הוסף התחייבות</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body row g-2">
+                        <input type="hidden" name="token" id="editToken">
+                        <input type="hidden" name="txType" value="commitment">
+                        <div class="col-6"><label class="form-label">תאריך</label><input type="date" name="date" id="inputDate" class="form-control" required></div>
+                        <div class="col-6"><label class="form-label">שם</label><input type="text" name="name" class="form-control autocomplete" required></div>
+                        <div class="col-6"><label class="form-label">סכום התחייבות</label><input type="number" name="amount" class="form-control" required></div>
+                        <div class="col-6"><label class="form-label">פירוט מצווה</label><input type="text" name="mitzvah" class="form-control autocomplete"></div>
+                        <div class="col-6">
+                            <label class="form-label">סוג הכנסה</label>
+                            <select name="paymentType" id="paymentTypeSelect" class="form-select"></select>
+                        </div>
+                        <div class="col-6"><label class="form-label">אסמכתא</label><input type="text" name="reference" class="form-control"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> שמור</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">בטל</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(function () {
+            const TRAN_KEY = "transactionsLocal";
+            const LAST_DATE_KEY = "lastDate_commitments";
+
+            const modalEl = document.getElementById('addModal');
+            const modal = new bootstrap.Modal(modalEl);
+
+            // load transactions from localStorage, ensure tokens/createdAt exist
+            let transactions = JSON.parse(localStorage.getItem(TRAN_KEY) || "[]");
+            transactions.forEach(t => {
+                if (!t.token) t.token = 't_' + Math.random().toString(36).substr(2, 9);
+                if (!t.createdAt) t.createdAt = Date.now();
+                if (!t.txType) t.txType = t.txType || 'commitment';
+            });
+
+            function saveTransactions() { localStorage.setItem(TRAN_KEY, JSON.stringify(transactions)); }
+
+            // חישוב יתרה עד תאריך/יצירה נתון עבור שם מסוים
+            function calcBalanceUpTo(name, upToDate, upToCreatedAt) {
+                let sumCommitments = 0;
+                let sumPayments = 0;
+                transactions.forEach(tx => {
+                    if (tx.name !== name) return;
+                    const txDate = tx.date || "";
+                    const created = tx.createdAt || 0;
+                    // השוואת מחרוזות yyyy-mm-dd תקינה ל־lexicographic
+                    if (txDate < upToDate || (txDate === upToDate && created <= upToCreatedAt)) {
+                        if (tx.txType === "commitment")
+                            sumCommitments += Number(tx.amount || 0);
+                        else if (tx.txType === "payment")
+                            sumPayments += Number(tx.amount || 0);
+                    }
+                });
+                return sumPayments - sumCommitments;
+            }
+
+            //$("#firebaseAlert").slideDown();
+            //$("#firebaseAlert .btn-close").click(() => $("#firebaseAlert").slideUp());
+
+            // אתחול DataTable
+            const table = $('#transactionsTable').DataTable({
+                data: transactions.filter(t => t.txType === 'commitment'),
+                language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/he.json' },
+                dom: 'Bfrtip',
+                buttons: [
+                    { extend: 'excelHtml5', text: 'ייצוא Excel', className: 'btn btn-info' },
+                    { extend: 'pdfHtml5', text: 'ייצוא PDF', className: 'btn btn-danger' }
+                ],
+                columns: [
+                    { data: 'date', defaultContent: '-' },
+                    { data: 'name', render: data => `<a href="person.html?name=${encodeURIComponent(data || '')}">${data || '-'}</a>` },
+                    { data: 'amount', render: d => Number(d || 0).toLocaleString('he-IL') },
+                    { data: 'mitzvah', defaultContent: '-' },
+                    { data: 'paymentType', defaultContent: '-' },
+                    { data: 'reference', defaultContent: '-' },
+                    {
+                        data: null, orderable: false, render: (data, type, row) => {
+                            const bal = calcBalanceUpTo(row.name, row.date || "0000-00-00", row.createdAt || 0);
+                            const cls = bal >= 0 ? 'text-success' : 'text-danger';
+                            return `<span class="${cls}">${Number(bal || 0).toLocaleString('he-IL')}</span>`;
+                        }
+                    },
+                    {
+                        data: null, orderable: false, render: () => `
+                                                    <button class="btn btn-sm btn-warning edit-row"><i class="bi bi-pencil-square"></i></button>
+                                                    <button class="btn btn-sm btn-danger delete-row"><i class="bi bi-trash"></i></button>
+                                                `
+                    }
+                ],
+                searching: false,
+                order: [[0, 'asc']],
+                drawCallback: function () { updateSums(); }
+            });
+
+            function reloadTable() {
+                const data = transactions.filter(t => t.txType === 'commitment').slice().sort((a, b) => {
+                    if ((a.date || "") !== (b.date || ""))
+                        return (a.date || "").localeCompare(b.date || "");
+                    return (a.createdAt || 0) - (b.createdAt || 0);
+                });
+                table.clear();
+                table.rows.add(data).draw();
+            }
+
+            function updateSums() {
+                const pageData = transactions.filter(t => t.txType === 'commitment');
+                let sumAmount = 0;
+                let sumBalance = 0;
+                pageData.forEach(p => {
+                    sumAmount += Number(p.amount || 0);
+                    sumBalance += Number(calcBalanceUpTo(p.name, p.date || "0000-00-00", p.createdAt || 0) || 0);
+                });
+                $("#sumAmount").text(sumAmount.toLocaleString('he-IL'));
+                $(".sumBalance").text(sumBalance.toLocaleString('he-IL'));
+            }
+            updateSums();
+
+            // חיפוש גלובלי (input חיצוני)
+            $("#globalSearch").on("keyup", function () { table.search(this.value).draw(); });
+
+            // טען סוגי הכנסה ל־select
+            function loadTypesToSelect() {
+                const arr = JSON.parse(localStorage.getItem('incomeTypes') || "[]");
+                const sel = $("#paymentTypeSelect").empty();
+                if (!arr || arr.length === 0) {
+                    sel.append(`<option value="">(לא הוגדרו סוגי הכנסה) - עבור ל'ניהול סוגי הכנסה'</option>`);
+                } else {
+                    sel.append(`<option value="">-- בחר סוג --</option>`);
+                    arr.forEach(v => sel.append(`<option value="${v}">${v}</option>`));
+                }
+            }
+            loadTypesToSelect();
+
+            // מקש Storage (עודכונים בטאב אחר)
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'incomeTypes') loadTypesToSelect();
+                if (e.key === TRAN_KEY) {
+                    transactions = JSON.parse(localStorage.getItem(TRAN_KEY) || "[]");
+                    // וודא שדהי token/createdAt יהיו קיימים
+                    transactions.forEach(t => {
+                        if (!t.token) t.token = 't_' + Math.random().toString(36).substr(2, 9);
+                        if (!t.createdAt) t.createdAt = Date.now();
+                        if (!t.txType) t.txType = t.txType || 'commitment';
+                    });
+                    reloadTable();
+                }
+            });
+
+            // פתיחת מודאל (להוספה / עריכה)
+            function openAddModal(editRowData) {
+                $("#editToken").val(editRowData ? editRowData.token : "");
+                if (editRowData) {
+                    $("#addForm [name=date]").val(editRowData.date || "");
+                    $("#addForm [name=name]").val(editRowData.name || "");
+                    $("#addForm [name=amount]").val(editRowData.amount || "");
+                    $("#addForm [name=mitzvah]").val(editRowData.mitzvah || "");
+                    $("#addForm [name=paymentType]").val(editRowData.paymentType || "");
+                    $("#addForm [name=reference]").val(editRowData.reference || "");
+                    $(".modal-title").text("✏️ ערוך התחייבות");
+                } else {
+                    $(".modal-title").text("➕ הוסף התחייבות");
+                    const last = localStorage.getItem(LAST_DATE_KEY);
+                    const today = new Date().toISOString().slice(0, 10);
+                    $("#inputDate").val(last || today);
+                    $("#addForm")[0].reset();
+                    $("#addForm [name=date]").val(last || today);
+                }
+                modal.show();
+            }
+
+            // כפתור הוספה
+            $("#openAddModal").click(() => {
+                openAddModal();
+            });
+
+            // שמירת תאריך אחרון
+            $("#inputDate").on("change", function () { localStorage.setItem(LAST_DATE_KEY, $(this).val()); });
+
+            // שמירת טופס (הוספה/עריכה)
+            $("#addForm").submit(function (e) {
+                e.preventDefault();
+                const f = $(this).serializeArray();
+                const obj = {};
+                f.forEach(x => obj[x.name] = x.value);
+
+                if (obj.token) {
+                    const idx = transactions.findIndex(t => t.token === obj.token);
+                    if (idx >= 0) {
+                        transactions[idx] = Object.assign({}, transactions[idx], obj, { amount: Number(obj.amount || 0) });
+                    }
+                } else {
+                    const newTx = Object.assign({}, obj, {
+                        token: 't_' + Math.random().toString(36).substr(2, 9),
+                        txType: 'commitment',
+                        amount: Number(obj.amount || 0),
+                        createdAt: Date.now()
+                    });
+                    transactions.push(newTx);
+                    localStorage.setItem(LAST_DATE_KEY, obj.date || new Date().toISOString().slice(0, 10));
+                }
+
+                saveTransactions();
+                reloadTable();
+                modal.hide();
+                this.reset();
+            });
+
+            // מחיקה
+            $('#transactionsTable tbody').on('click', '.delete-row', function () {
+                const data = table.row($(this).closest('tr')).data();
+                if (!data) return;
+                if (!confirm('האם למחוק רשומה זו?')) return;
+                transactions = transactions.filter(t => t.token !== data.token);
+                saveTransactions();
+                reloadTable();
+            });
+
+            // עריכה — פותח את המודל עם הנתונים
+            $('#transactionsTable tbody').on('click', '.edit-row', function () {
+                const data = table.row($(this).closest('tr')).data();
+                if (!data) return;
+                openAddModal(data);
+            });
+
+            // דאגה ל־UI
+            $(".content").fadeIn(200);
+
+            // רענון ראשוני של הטבלה
+            reloadTable();
+
+
+            // Sidebar toggle submenu
+            $("#manageToggle").click(function (e) {
+                e.preventDefault();
+                $("#manageSubmenu").toggleClass("show");
+                //rotate caret
+                $(this).find('i.bi-caret-down').toggleClass("caret-rotate open");
+            });
+
+            // Sidebar toggles
+
+            $("#manageToggleMobile").click(e => {
+                e.preventDefault();
+                $("#manageSubmenuMobile").toggleClass("show");
+                //rotate caret
+                $(this).find('i.bi-caret-down').toggleClass("caret-rotate open");
+            });
+
+        });
+    </script>
+</body>
+</html>

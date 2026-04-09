@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>כרטיס אדם - ניהול חשבונות</title>
+
+    <!-- Bootstrap + Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    <!-- jQuery + jQueryUI + DataTables -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css" />
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+    body {
+        /*display: none;*/
+        background: #f8f9fa;
+        font-family: "Segoe UI",Tahoma,sans-serif;
+    }
+
+    .bg-custom {
+        background: linear-gradient(135deg,#6f86d6 0%,#48c6ef 100%);
+    }
+
+    /* Sidebar style */
+    .sidebar {
+        width: 240px;
+        min-height: 100vh;
+        position: fixed;
+        top: 0;
+        right: 0;
+        background: linear-gradient(135deg,#6f86d6 0%,#48c6ef 100%);
+        padding-top: 1rem;
+        color: #fff;
+        z-index: 1000;
+    }
+
+        .sidebar .nav-link {
+            color: #fff;
+        }
+
+            .sidebar .nav-link:hover {
+                background: rgba(255,255,255,0.2);
+                border-radius: 6px;
+            }
+
+    .submenu {
+        display: none;
+        padding-right: 1rem;
+    }
+
+        .submenu.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* content area with sidebar */
+    .content {
+        display: none;
+        margin-right: 240px;
+        padding: 1rem;
+    }
+
+    /* Responsive: hide sidebar in small screens */
+    @media (max-width: 992px) {
+        .sidebar {
+            position: relative;
+            width: 100%;
+            min-height: auto;
+        }
+
+        .content {
+            margin-right: 0;
+        }
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,123,255,0.07);
+        cursor: pointer;
+    }
+
+    #firebaseAlert {
+        display: none;
+    }
+
+    tfoot th {
+        background: #f1f1f1;
+    }
+
+    body.theme-blue {
+        background: #e6f0ff;
+        color: #003366;
+    }
+
+    .stat-card {
+        border-radius: 12px;
+        padding: 20px;
+        color: #333;
+        text-align: center;
+    }
+
+    .stat-red {
+        background: #f8d7da;
+    }
+
+    .stat-green {
+        background: #d4edda;
+    }
+
+    .stat-yellow {
+        background: #fff3cd;
+    }
+
+    tfoot tr.balance-row th {
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+
+    tfoot tr.balance-row.positive th {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    tfoot tr.balance-row.negative th {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    /* Gmail-style autocomplete enhanced */
+    .ui-autocomplete {
+        max-height: 250px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-right: 0;
+        z-index: 9999;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transition: opacity 0.2s ease, transform 0.1s ease;
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+        .ui-autocomplete.ui-autocomplete-open {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    .ui-menu-item-wrapper {
+        font-size: 14px;
+        padding: 6px 12px;
+        cursor: pointer;
+    }
+
+    .ui-state-active {
+        background-color: #e8f0fe !important;
+        color: #1967d2 !important;
+        font-weight: 500;
+    }
+
+    #manageSubmenuMobile {
+        display: none;
+    }
+
+        #manageSubmenuMobile.show {
+            display: block;
+        }
+
+    .offcanvas .submenu .nav-link {
+        color: #fff;
+    }
+
+        .offcanvas .submenu .nav-link:hover {
+            background: rgba(255,255,255,0.2);
+            border-radius: 6px;
+        }
+
+    /* כפתור ניהול ראשי בדסקטופ */
+    .sidebar #manageToggle {
+        color: #fff;
+    }
+
+        .sidebar #manageToggle:hover {
+            background: rgba(255,255,255,0.2);
+            border-radius: 6px;
+        }
+
+    /* כפתור ניהול ראשי במובייל */
+    .offcanvas #manageToggleMobile {
+        color: #fff;
+    }
+
+        .offcanvas #manageToggleMobile:hover {
+            background: rgba(255,255,255,0.2);
+            border-radius: 6px;
+        }
+
+    .caret-rotate {
+        display: inline-block;
+        transition: transform 0.3s ease;
+    }
+
+        .caret-rotate.open {
+            transform: rotate(90deg); /* עכשיו מצביע למעלה */
+        }
+</style>
+</head>
+<body class="theme-blue">
+
+    <!-- Topbar -->
+    <nav class="navbar navbar-dark bg-custom d-lg-none">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">🏠 ניהול בית הכנסת</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+
+
+    <!-- Sidebar for desktop -->
+    <div class="sidebar d-none d-lg-block">
+        <div class="px-3 mb-3">
+            <a class="navbar-brand text-white" href="#">🏠 ניהול בית הכנסת</a>
+        </div>
+        <ul class="nav flex-column px-2">
+            <li class="nav-item"><a class="nav-link active" href="index.html">🏠 דף ראשי</a></li>
+            <li class="nav-item"><a class="nav-link" href="commitments.html">💼 התחייבויות</a></li>
+            <li class="nav-item"><a class="nav-link" href="payments.html">💸 תשלומים</a></li>
+            <li class="nav-item"><a class="nav-link" href="summary.html">📑 סיכום כולל</a></li>
+            <li class="nav-item">
+                <a href="#" class="nav-link d-flex justify-content-between align-items-center" id="manageToggle">
+                    ⚙️ ניהול <i class="bi bi-caret-down"></i>
+                </a>
+                <ul class="submenu list-unstyled" id="manageSubmenu">
+                    <li><a class="nav-link" href="manage.html">⚙️ ניהול רשימות</a></li>
+                    <li><a class="nav-link" href="users.html">👥 ניהול משתמשים</a></li>
+                    <li><a class="nav-link" href="permissions.html">🔐 הרשאות</a></li>
+                </ul>
+            </li>
+            <li class="nav-item"><a class="nav-link" href="dashboard.html">📊 דוחות</a></li>
+            <li class="nav-item">
+                <span id="firebaseStatus" class="nav-link text-warning" title="לא מחובר ל-Firebase">
+                    <i class="bi bi-cloud-slash"></i>
+                </span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Offcanvas mobile -->
+    <div class="offcanvas offcanvas-end bg-custom text-white" tabindex="-1" id="mobileSidebar">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title">📂 תפריט</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+            <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link text-white" href="index.html">🏠 דף ראשי</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="commitments.html">💼 התחייבויות</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="payments.html">💸 תשלומים</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="summary.html">📑 סיכום כולל</a></li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link d-flex justify-content-between align-items-center" id="manageToggleMobile">⚙️ ניהול <i class="bi bi-caret-down"></i></a>
+                    <ul class="submenu list-unstyled" id="manageSubmenuMobile">
+                        <li><a class="nav-link" href="manage.html">⚙️ ניהול רשימות</a></li>
+                        <li><a class="nav-link" href="users.html">👥 ניהול משתמשים</a></li>
+                        <li><a class="nav-link" href="permissions.html">🔐 הרשאות</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item"><a class="nav-link text-white" href="dashboard.html">📊 דוחות</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- כותרת ושם האדם -->
+    <div class="p-4 rounded bg-white shadow-sm mb-4 text-center">
+        <h1>📜 פירוט חשבונות של <span class="personName"></span></h1>
+    </div>
+
+    <!-- כרטיסי סטטוס -->
+    <div class="container my-4">
+        <div class="row g-3 text-center">
+            <div class="col-md-4"><div class="stat-card stat-red"><h4>סה״כ התחייבויות</h4><div id="statAmount">0</div></div></div>
+            <div class="col-md-4"><div class="stat-card stat-green"><h4>סה״כ תשלומים</h4><div id="statActual">0</div></div></div>
+            <div class="col-md-4"><div class="stat-card stat-yellow"><h4>מאזן כללי</h4><div id="statBalance">0</div></div></div>
+        </div>
+    </div>
+
+    <!-- טווח תאריכים + כפתור הפקת חשבונית -->
+    <div class="container py-2">
+        <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+            <label class="form-label mb-0">מתאריך:</label>
+            <input type="date" id="startDate" class="form-control w-auto">
+            <label class="form-label mb-0">עד תאריך:</label>
+            <input type="date" id="endDate" class="form-control w-auto">
+            <button id="filterDates" class="btn btn-primary">🔍 סנן</button>
+            <button id="generateInvoice" class="btn btn-success ms-auto"><i class="bi bi-receipt"></i> הפקת דף סיכום</button>
+        </div>
+    </div>
+
+    <!-- טבלת תשלומים -->
+    <div class="container py-2">
+        <div class="table-responsive">
+            שם מתפלל: <span class="personName link"></span>
+            <table id="personTable" class="display table table-bordered table-hover w-100">
+                <thead>
+                    <tr>
+                        <th>תאריך</th>
+                        <th>סכום התחייבות</th>
+                        <th>פירוט מצווה</th>
+                        <th>סוג תשלום</th>
+                        <th>אסמכתא</th>
+                        <th>תשלום בפועל</th>
+                        <th>פעולות</th>
+                    </tr>
+                </thead>
+                <tfoot>
+                    <tr>
+                        <th>סה״כ:</th>
+                        <th id="sumAmount">0</th>
+                        <th colspan="3"></th>
+                        <th id="sumActual">0</th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(function () {
+            let localKey = "transactionsLocal";
+            let payments = JSON.parse(localStorage.getItem(localKey) || "[]");
+
+            // שם האדם מה-URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const personName = urlParams.get("name") || "לא ידוע";
+            $(".personName").text(personName);
+
+            // סינון לפי שם בלבד
+            let personPayments = payments.filter(p => p.name === personName);
+
+            const table = $('#personTable').DataTable({
+                data: personPayments,
+                columns: [
+                    { data: 'date', defaultContent: "-" },
+                    { data: 'amount', defaultContent: "-" },
+                    { data: 'mitzvah', defaultContent: "-" },
+                    { data: 'paymentType', defaultContent: "-" },
+                    { data: 'reference', defaultContent: "-" },
+                    { data: 'actualPayment', defaultContent: "-" },
+                    {
+                        data: null, orderable: false,
+                        render: (data, type, row, meta) => `
+                      <button class="btn btn-sm btn-success print-invoice" title="חשבונית"><i class="bi bi-receipt"></i></button>
+                    `
+                    }
+                ],
+                searching: false,
+                drawCallback: updateSums
+            });
+
+            function updateSums() {
+                let sumAmount = 0, sumActual = 0;
+                personPayments.forEach(p => {
+                    sumAmount += Number(p.amount || 0);
+                    sumActual += Number(p.actualPayment || 0);
+                });
+                $("#sumAmount").text(sumAmount.toLocaleString());
+                $("#sumActual").text(sumActual.toLocaleString());
+                $("#statAmount").text(sumAmount.toLocaleString());
+                $("#statActual").text(sumActual.toLocaleString());
+                $("#statBalance").text((sumActual - sumAmount).toLocaleString());
+            }
+
+            // סינון לפי תאריכים
+            $("#filterDates").click(function () {
+                const start = $("#startDate").val();
+                const end = $("#endDate").val();
+                personPayments = payments.filter(p => {
+                    if (p.name !== personName) return false;
+                    if (start && p.date < start) return false;
+                    if (end && p.date > end) return false;
+                    return true;
+                });
+                table.clear().rows.add(personPayments).draw();
+            });
+
+            // הפקת חשבונית כוללת
+            $("#generateInvoice").click(function () {
+                if (personPayments.length === 0) {
+                    alert("אין תשלומים להפיק מהם חשבונית");
+                    return;
+                }
+                const batch = encodeURIComponent(JSON.stringify(personPayments));
+                window.open(`invoice.html?batch=${batch}`, '_blank');
+            });
+
+            // הפקת חשבונית לכל שורה
+            $('#personTable').on('click', '.print-invoice', function () {
+                const rowData = table.row($(this).closest('tr')).data();
+                const batch = encodeURIComponent(JSON.stringify([rowData]));
+                window.open(`invoice.html?batch=${batch}`, '_blank');
+            });
+
+            $('body').fadeIn(200);
+        });
+    </script>
+</body>
+</html>
